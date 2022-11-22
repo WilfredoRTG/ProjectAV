@@ -4,25 +4,23 @@ import cv2
 from matplotlib import pyplot as plt
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, accuracy_score
 
+# Local variables
 PATH_TO_DATASET = 'dataSet/DJI_'
 PATH_TO_OUTPUT = 'cropImages/'
 PATH_TO_OUTPUT_2 = 'cropImages2/'
 
 MIN_MATCH_COUNT = 10
-img0 = cv.imread('templateImages/test0_enhanced.png',
-                 flags=cv.IMREAD_COLOR)          # queryImage
-img1 = cv.imread('templateImages/test1_enhanced.jpg',
-                 flags=cv.IMREAD_COLOR)          # queryImage
+img0 = cv.imread('templateImages/test0_enhanced.png', flags=cv.IMREAD_COLOR)
+img1 = cv.imread('templateImages/test1_enhanced.jpg', flags=cv.IMREAD_COLOR)
 img2 = cv.imread('templateImages/test2_enhanced.jpg', flags=cv.IMREAD_COLOR)
 img3 = cv.imread('templateImages/test3_enhanced.jpg', flags=cv.IMREAD_COLOR)
 img4 = cv.imread('templateImages/test4_enhanced.jpg', flags=cv.IMREAD_COLOR)
 img5 = cv.imread('templateImages/test5_enhanced.jpg', flags=cv.IMREAD_COLOR)
 
-comparationImage = cv2.imread(
-    PATH_TO_OUTPUT+'image16/fragment26.jpg', flags=cv2.IMREAD_COLOR)
-# comparationImage = cv.imread(PATH_TO_OUTPUT_2+'image31/fragment289.jpg', flags=cv.IMREAD_COLOR)
-# comparationImage = cv.imread('testImages/foca/32.jpg', flags=cv.IMREAD_COLOR)
+# Image to compare
+comparationImage = cv2.imread(PATH_TO_OUTPUT+'image16/fragment26.jpg', flags=cv2.IMREAD_COLOR)
 
+# Concatenate the images
 newIm = np.concatenate((img0, img1), axis=0)
 newIm2 = np.concatenate((img2, img3), axis=0)
 newIm3 = np.concatenate((img4, img5), axis=0)
@@ -34,7 +32,7 @@ kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
 wilImage = cv2.filter2D(src=comparationImage, ddepth=-1, kernel=kernel)
 
 
-# comparationImage = cv.imread('box_in_scene.png',0) # trainImage
+
 # Initiate SIFT detector
 sift = cv.SIFT_create()
 # find the keypoints and descriptors with SIFT
@@ -52,11 +50,16 @@ for m, n in matches:
         good.append(m)
 
 if len(good) > MIN_MATCH_COUNT:
+    # key points
     src_pts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)
     dst_pts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)
+
+    # homography
     M, mask = cv.findHomography(src_pts, dst_pts, cv.RANSAC, 5.0)
     matchesMask = mask.ravel().tolist()
     h, w, c = finalImage.shape
+
+    # perspective transform
     pts = np.float32([[0, 0], [0, h-1], [w-1, h-1], [w-1, 0]]
                      ).reshape(-1, 1, 2)
     dst = cv.perspectiveTransform(pts, M)
@@ -65,17 +68,17 @@ if len(good) > MIN_MATCH_COUNT:
     print("Es foca")
 else:
     print("Son piedras")
-    # print( "Not enough matches are found - {}/{}".format(len(good), MIN_MATCH_COUNT) )
     matchesMask = None
 
+# draw the matches
 draw_params = dict(matchColor=(0, 255, 0),  # draw matches in green color
-                   singlePointColor=None,
-                   matchesMask=matchesMask,  # draw only inliers
-                   flags=2)
+                    singlePointColor=None,
+                    matchesMask=matchesMask,  # draw only inliers
+                    flags=2)
 result = cv.drawMatches(finalImage, kp1, wilImage,
                         kp2, good, None, **draw_params)
-# plt.imshow(img3, 'gray'),plt.show()
 
+# test to confusion matrix
 y_true = [
             "piedras", "piedras", "foca", "piedras", "foca", "piedras",
             "foca", "piedras", "foca", "piedras", "foca", "piedras", "piedras", 
@@ -90,14 +93,17 @@ y_pred = [
 
 labels = ["foca", "piedras"]
 
+# accuracy score of the SIFT algorithm
 score = accuracy_score(y_true, y_pred)
 print("Accuracy: ", score)
 
+# confusion matrix
 cm = confusion_matrix(y_true, y_pred, labels=labels)
 
 len_focas = []
 len_rocas = []
 
+# repetition of each class
 for i in range(len(y_true)):
     if (y_true[i] == "foca"):
         len_focas.append(y_true[i])
@@ -107,6 +113,7 @@ for i in range(len(y_true)):
 accuracy_focas = cm[0][0]/(len(len_focas))
 accuracy_rocas = cm[1][1]/(len(len_rocas))
 
+# print results
 print("Accuracy focas: ", accuracy_focas)
 
 print("Accuracy rocas: ", accuracy_rocas)
@@ -115,14 +122,3 @@ disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=labels)
 
 disp.plot()
 plt.show()
-
-# cv2.namedWindow("Resized_Window", cv2.WINDOW_NORMAL)
-
-# # Using resizeWindow()
-# cv2.resizeWindow("Resized_Window", 800, 604)
-
-# # Displaying the image
-# cv2.imshow("Resized_Window", result)
-
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()

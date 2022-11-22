@@ -6,6 +6,12 @@ import cv2
 def rgb_to_hex(r, g, b):
     return ('#{:X}{:X}{:X}').format(r, g, b)
 
+'''
+    Calculate the centroid of the image
+    inputs:
+        - clt: clusters of the image
+'''
+
 def centroid_histogram(clt):
     # grab the number of different clusters and create a histogram
     # based on the number of pixels assigned to each cluster
@@ -17,6 +23,13 @@ def centroid_histogram(clt):
     # return the histogram
     return hist
 
+'''
+    plot the colors of the image
+    inputs:
+        - hist: histogram of the image
+        - centroids: centroids of the image
+        - hexa: if True, the colors will be in hexadecimal
+'''
 
 def plot_colors(hist, centroids, hexa=False):
     # initialize the bar chart representing the relative frequency
@@ -50,7 +63,14 @@ def plot_colors(hist, centroids, hexa=False):
     else:
         return RGBColors
 
+'''
+    Apply the filters
+    inputs:
+        - img: image to apply the filters
+'''
+
 def applyFilters(img):
+    # Convert the image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     # Histogram
